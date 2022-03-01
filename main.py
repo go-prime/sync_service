@@ -28,7 +28,10 @@ def main():
     cursor = conn.cursor()
     logger.info("Successfully connected.")
     cursor.execute("select customer from bench.dbo.invoices")
-    data = [list(r) for r in cursor]
+    def to_dict(row):
+        return dict(zip([t[0] for t in row.cursor_description], row))
+    
+    data = [to_dict(r) for r in cursor]
     jso = json.dumps(data)
     logger.info(jso)
     # for i in data:

@@ -17,18 +17,18 @@ def main():
     '''
     
     logger.info("Connecting to database")
-    conn = pyodbc.connect(
-        "Driver=ODBC Driver 17 for SQL Server;"
-        "Server=DESKTOP-U6DOJ9D;"
-        "Database=bench;"
-        "Trusted_Connection=yes;"
-    )
-    cursor = conn.cursor()
-    logger.info("Successfully connected.")
-    cursor.execute("select customer from bench.dbo.invoices")
-    data = list(cursor)
-    for i in data:
-        logger.info(str(i))
+    # conn = pyodbc.connect(
+    #     "Driver=ODBC Driver 17 for SQL Server;"
+    #     "Server=DESKTOP-U6DOJ9D;"
+    #     "Database=bench;"
+    #     "Trusted_Connection=yes;"
+    # )
+    # cursor = conn.cursor()
+    # logger.info("Successfully connected.")
+    # cursor.execute("select customer from bench.dbo.invoices")
+    # # data = list(cursor)
+    # for i in data:
+    #     logger.info(str(i))
 
     resp = requests.get(
         "http://167.99.205.84:81/api/method/"
@@ -48,7 +48,7 @@ def main():
         "http://167.99.205.84:81/api/method/"
         "alpha_packaging.alpha_packaging.public_api.sync_orderbook", 
         headers=HEADERS, 
-        data={"orders": data}
+        data={"orders": []}
     )
     if resp.status_code == 200:
         logger.info("Successfully synced orderbook")

@@ -2,10 +2,12 @@ import pyodbc
 from loggers import logger
 import time
 import requests
+import json
 
 logger.info("running service")
 HEADERS = {
-    "Authorization": "token 4ab84db48b15118:8cca3b8064037ae",
+    "Authorization": "token 10eb00b80616b26:9cb0dde978ae2c9",
+    # "Authorization": "token 4ab84db48b15118:8cca3b8064037ae",
     "Accept": "application/json",
     "Content-Type": "application/json"
 }
@@ -17,21 +19,24 @@ def main():
     '''
     
     logger.info("Connecting to database")
-    # conn = pyodbc.connect(
-    #     "Driver=ODBC Driver 17 for SQL Server;"
-    #     "Server=DESKTOP-U6DOJ9D;"
-    #     "Database=bench;"
-    #     "Trusted_Connection=yes;"
-    # )
-    # cursor = conn.cursor()
-    # logger.info("Successfully connected.")
-    # cursor.execute("select customer from bench.dbo.invoices")
-    # # data = list(cursor)
+    conn = pyodbc.connect(
+        "Driver=ODBC Driver 17 for SQL Server;"
+        "Server=DESKTOP-U6DOJ9D;"
+        "Database=bench;"
+        "Trusted_Connection=yes;"
+    )
+    cursor = conn.cursor()
+    logger.info("Successfully connected.")
+    cursor.execute("select customer from bench.dbo.invoices")
+    data = [list(r) for r in cursor]
+    jso = json.dumps(data)
+    logger.info(jso)
     # for i in data:
     #     logger.info(str(i))
 
     resp = requests.get(
-        "http://167.99.205.84:81/api/method/"
+        "http://localhost:8000/api/method/"
+        # "http://167.99.205.84:81/api/method/"
         "alpha_packaging.alpha_packaging.public_api.last_order", 
         headers=HEADERS
     )
@@ -45,10 +50,11 @@ def main():
         logger.info("Collecting all orders")
 
     resp = requests.get(
-        "http://167.99.205.84:81/api/method/"
+        "http://localhost:8000/api/method/"
+        # "http://167.99.205.84:81/api/method/"
         "alpha_packaging.alpha_packaging.public_api.sync_orderbook", 
         headers=HEADERS, 
-        data={"orders": []}
+        json={"orders": jso}
     )
     if resp.status_code == 200:
         logger.info("Successfully synced orderbook")

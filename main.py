@@ -22,8 +22,12 @@ def get_sales_orders(conn, frm=None, as_json=True):
     cursor.execute("""
         SELECT [OrderNum]
             ,[OrderDate]
-            ,[iStockCodeID]
+            ,[Code]
             ,[fQuantity]
+            ,[Account]
+            ,[Name]
+            ,[Timestamp]
+            ,[Description_1]
         FROM [2022TEST].[dbo].[_bvSalesOrdersFull]
         {}        
     """.format(filters))

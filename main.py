@@ -25,6 +25,7 @@ def get_sales_orders(conn, frm=None, as_json=True):
 
     cursor.execute("""
         SELECT [OrderNum]
+            ,[ExtOrderNum]
             ,[OrderDate]
             ,[Code]
             ,[fQuantity]

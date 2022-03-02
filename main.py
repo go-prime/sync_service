@@ -3,6 +3,7 @@ from loggers import logger
 import time
 import requests
 import json
+import datetime
 
 logger.info("running service")
 
@@ -18,7 +19,9 @@ def get_sales_orders(conn, frm=None, as_json=True):
     logger.info("Successfully connected.")
     filters = ""
     if frm:
-        filters = "WHERE dTimeStamp > '{}'".format(frm.strftime("%Y-%m-%d %H:%M"))
+        if isinstance(frm, str):
+            frm = datetime.datetime.strptime(frm, "%Y-%m-%d %H:%M:%S")
+        filters = "WHERE dTimeStamp > '{}'".format(frm.strftime("%Y-%m-%d %H:%M:%S"))
 
     cursor.execute("""
         SELECT [OrderNum]
@@ -69,7 +72,7 @@ def main():
         headers=HEADERS
     )
     logger.info(resp.content)
-    latest = resp.json().get("latest")
+    latest = resp.json().get("message", {}).get("latest")
     if latest:
         # only get latest items
         logger.info(f"Collecting data since {latest}")

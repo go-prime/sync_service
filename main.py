@@ -30,6 +30,7 @@ def get_sales_orders(conn, frm=None, as_json=True):
             ,[Description_1]
             ,[fUnitPriceIncl]
             ,[fUnitPriceExcl]
+            ,[dTimeStamp]
         FROM [2022TEST].[dbo].[_bvSalesOrdersFull]
         {}
     """.format(filters))

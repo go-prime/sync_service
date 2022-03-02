@@ -18,7 +18,7 @@ def get_sales_orders(conn, frm=None, as_json=True):
     logger.info("Successfully connected.")
     filters = ""
     if frm:
-        filters = "WHERE OrderDate > '{}'".format(frm.strftime("%Y-%m-%d"))
+        filters = "WHERE dTimeStamp > '{}'".format(frm.strftime("%Y-%m-%d %H:%M"))
 
     cursor.execute("""
         SELECT [OrderNum]

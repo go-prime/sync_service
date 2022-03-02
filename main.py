@@ -5,6 +5,7 @@ import requests
 import json
 
 logger.info("running service")
+
 HEADERS = {
     "Authorization": "token 4ab84db48b15118:8cca3b8064037ae",
     "Accept": "application/json",
@@ -18,7 +19,7 @@ def get_sales_orders(conn, frm=None, as_json=True):
     filters = ""
     if frm:
         filters = "WHERE OrderDate > '{}'".format(frm.strftime("%Y-%m-%d"))
-    
+
     cursor.execute("""
         SELECT [OrderNum]
             ,[OrderDate]
@@ -26,12 +27,13 @@ def get_sales_orders(conn, frm=None, as_json=True):
             ,[fQuantity]
             ,[Account]
             ,[Name]
-            ,[Timestamp]
             ,[Description_1]
+            ,[fUnitPriceIncl]
+            ,[fUnitPriceExcl]
         FROM [2022TEST].[dbo].[_bvSalesOrdersFull]
-        {}        
+        {}
     """.format(filters))
-    
+
     def to_dict(row):
         return dict(zip([t[0] for t in row.cursor_description], row))
 

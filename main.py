@@ -4,11 +4,17 @@ import time
 import requests
 import json
 import datetime
+import os 
 
 logger.info("running service")
 
+WORKING_DIR = "C:\goprime\sync_service"
+config = None 
+with open (os.path.join(WORKING_DIR, "config.json"), "r") as f:
+    config = json.load(f)
+
 HEADERS = {
-    "Authorization": "token 4ab84db48b15118:8cca3b8064037ae",
+    "Authorization": config.get('token'),
     "Accept": "application/json",
     "Content-Type": "application/json"
 }
@@ -17,25 +23,25 @@ def get_sales_orders(conn, frm=None, as_json=True):
     '''Get all the sales orders from the database'''
     cursor = conn.cursor()
     logger.info("Successfully connected.")
-    filters = ""
+    filters = "WHERE fQuantity > fQtyProcessed AND DocumentStateDesc != 'Archived' "
     if frm:
         if isinstance(frm, str):
             frm = datetime.datetime.strptime(frm, "%Y-%m-%d %H:%M:%S")
-        filters = "WHERE dTimeStamp > '{}'".format(frm.strftime("%Y-%m-%d %H:%M:%S"))
+        filters += " AND dTimeStamp > '{}'".format(frm.strftime("%Y-%m-%d %H:%M:%S"))
 
     cursor.execute("""
         SELECT [OrderNum]
             ,[ExtOrderNum]
             ,[OrderDate]
             ,[Code]
-            ,[fQuantity]
+            ,[QtyOutstanding] as fQuantity
             ,[Account]
             ,[Name]
             ,[Description_1]
             ,[fUnitPriceIncl]
             ,[fUnitPriceExcl]
             ,[dTimeStamp]
-        FROM [2022TEST].[dbo].[_bvSalesOrdersFull]
+        FROM [Alpha Packaging].[dbo].[_bvSalesOrdersFull]
         {}
     """.format(filters))
 
@@ -43,8 +49,9 @@ def get_sales_orders(conn, frm=None, as_json=True):
         return dict(zip([t[0] for t in row.cursor_description], row))
 
     values = [to_dict(r) for r in cursor]
+
     if as_json:
-        return json.dumps(values)
+        return json.dumps(values, default=str)
     return values
 
 def main():
@@ -57,18 +64,15 @@ def main():
     logger.info("Connecting to database")
     conn = pyodbc.connect(
         "Driver=ODBC Driver 11 for SQL Server;"
-        "Server=192.168.10.177;"
-        "Database=2022TEST;"
-        "user=alpha;"
-        "password=Alpha@2022;"
+        f"Server={config.get('server')};"
+        f"Database={config.get('database')};"
+        f"user={config.get('user')};"
+        f"password={config.get('password')};"
         "Trusted_Connection=yes;"
     )
-    
-    for i in data:
-        logger.info(str(i))
 
     resp = requests.get(
-        "http://167.99.205.84:81/api/method/"
+        f"http://{config.get('host')}/api/method/"
         "alpha_packaging.alpha_packaging.public_api.last_order", 
         headers=HEADERS
     )
@@ -84,7 +88,7 @@ def main():
         data = get_sales_orders(conn)
 
     resp = requests.get(
-        "http://167.99.205.84:81/api/method/"
+        f"http://{config.get('host')}/api/method/"
         "alpha_packaging.alpha_packaging.public_api.sync_orderbook", 
         headers=HEADERS, 
         json={"orders": data}

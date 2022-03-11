@@ -2,19 +2,111 @@ import pyodbc
 from loggers import logger
 import time
 import requests
+import json
+import datetime
+import os 
 
 logger.info("running service")
+
+WORKING_DIR = "C:\goprime\sync_service"
+config = None 
+with open (os.path.join(WORKING_DIR, "config.json"), "r") as f:
+    config = json.load(f)
+
 HEADERS = {
-    "Authorization": "token 4ab84db48b15118:8cca3b8064037ae",
+    "Authorization": config.get('token'),
     "Accept": "application/json",
     "Content-Type": "application/json"
 }
 
-def get_sales_orders(conn, frm=None):
+def get_sales_orders(conn, frm=None, as_json=True):
     '''Get all the sales orders from the database'''
     cursor = conn.cursor()
     logger.info("Successfully connected.")
+    filters = """
+        WHERE fQuantity > fQtyProcessed 
+        AND DocumentStateDesc != 'Archived'
+        AND (QtyOutstanding / fQuantity) > 0.1    
+    """
+    if frm:
+        if isinstance(frm, str):
+            frm = datetime.datetime.strptime(frm, "%Y-%m-%d %H:%M:%S")
+        filters += " AND dTimeStamp > '{}'".format(frm.strftime("%Y-%m-%d %H:%M:%S"))
+
     cursor.execute("""
+        SELECT [OrderNum]
+            ,[ExtOrderNum]
+            ,[OrderDate]
+            ,[Code]
+            ,[QtyOutstanding] as fQuantity
+            ,[Account]
+            ,[Name]
+            ,[Description_1]
+            ,[fUnitPriceIncl]
+            ,[fUnitPriceExcl]
+            ,[dTimeStamp]
+        FROM [Alpha Packaging].[dbo].[_bvSalesOrdersFull]
+        {}
+    """.format(filters))
+
+    def to_dict(row):
+        return dict(zip([t[0] for t in row.cursor_description], row))
+
+    values = [to_dict(r) for r in cursor]
+
+    if as_json:
+        return json.dumps(values, default=str)
+    return values
+
+def main():
+    '''
+    use pyodbc.drivers() to get the driver list.
+    Get server name from the properties of the database server.
+    validate database name
+    '''
+    
+    logger.info("Connecting to database")
+    conn = pyodbc.connect(
+        "Driver=ODBC Driver 11 for SQL Server;"
+        f"Server={config.get('server')};"
+        f"Database={config.get('database')};"
+        f"user={config.get('user')};"
+        f"password={config.get('password')};"
+        "Trusted_Connection=yes;"
+    )
+
+    resp = requests.get(
+        f"http://{config.get('host')}/api/method/"
+        "alpha_packaging.alpha_packaging.public_api.last_order", 
+        headers=HEADERS
+    )
+    logger.info(resp.content)
+    latest = resp.json().get("message", {}).get("latest")
+    if latest:
+        # only get latest items
+        logger.info(f"Collecting data since {latest}")
+        data = get_sales_orders(conn, latest)
+    else:
+        # initial fetch of data 
+        logger.info("Collecting all orders")
+        data = get_sales_orders(conn)
+
+    resp = requests.get(
+        f"http://{config.get('host')}/api/method/"
+        "alpha_packaging.alpha_packaging.public_api.sync_orderbook", 
+        headers=HEADERS, 
+        json={"orders": data}
+    )
+    if resp.status_code == 200:
+        logger.info("Successfully synced orderbook")
+    else:
+        logger.error("Failed to sync order book.")
+    logger.info(resp.content)
+
+main()
+
+
+"""
     SELECT [idInvoiceLines]
       ,[iInvoiceID]
       ,[iOrigLineID]
@@ -661,59 +753,5 @@ def get_sales_orders(conn, frm=None):
       ,[StockingUnit]
       ,[DimensionDescription]
       ,[Comment]
-  FROM [2022TEST].[dbo].[_bvSalesOrdersFull]
-  WHERE _btblInvoiceLines_dCreatedDate > '2022-02-01 00:00'               
-    """)
-    return list(cursor)
-
-def main():
-    '''
-    use pyodbc.drivers() to get the driver list.
-    Get server name from the properties of the database server.
-    validate database name
-    '''
+    """
     
-    logger.info("Connecting to database")
-    conn = pyodbc.connect(
-        "Driver=ODBC Driver 11 for SQL Server;"
-        "Server=192.168.10.177;"
-        "Database=2022TEST;"
-        "user=alpha;"
-        "password=Alpha@2022;"
-        "Trusted_Connection=yes;"
-    )
-    
-    data = get_sales_orders(conn)
-    for i in data:
-        logger.info(str(i))
-
-    resp = requests.get(
-        "http://167.99.205.84:81/api/method/"
-        "alpha_packaging.alpha_packaging.public_api.last_order", 
-        headers=HEADERS
-    )
-    logger.info(resp.content)
-    latest = resp.json().get("latest")
-    if latest:
-        # only get latest items
-        logger.info(f"Collecting data since {latest}")
-    else:
-        # initial fetch of data 
-        logger.info("Collecting all orders")
-
-    resp = requests.get(
-        "http://167.99.205.84:81/api/method/"
-        "alpha_packaging.alpha_packaging.public_api.sync_orderbook", 
-        headers=HEADERS, 
-        data={"orders": data}
-    )
-    if resp.status_code == 200:
-        logger.info("Successfully synced orderbook")
-    else:
-        logger.error("Failed to sync order book.")
-    logger.info(resp.content)
-
-main()
-
-# if __name__ == "__main__":
-#     main()

@@ -23,7 +23,11 @@ def get_sales_orders(conn, frm=None, as_json=True):
     '''Get all the sales orders from the database'''
     cursor = conn.cursor()
     logger.info("Successfully connected.")
-    filters = "WHERE fQuantity > fQtyProcessed AND DocumentStateDesc != 'Archived' "
+    filters = """
+        WHERE fQuantity > fQtyProcessed 
+        AND DocumentStateDesc != 'Archived'
+        AND (QtyOutstanding / fQuantity) > 0.1    
+    """
     if frm:
         if isinstance(frm, str):
             frm = datetime.datetime.strptime(frm, "%Y-%m-%d %H:%M:%S")

@@ -25,13 +25,13 @@ def get_sales_orders(conn, frm=None, as_json=True):
     logger.info("Successfully connected.")
     filters = """
         WHERE fQuantity > fQtyProcessed 
-        AND DocumentStateDesc != 'Archived'
+        AND DocumentStateDesc not in ( 'Archived', 'Quote', 'Cancelled', 'Template')
         AND (QtyOutstanding / fQuantity) > 0.1    
     """
     if frm:
         if isinstance(frm, str):
             frm = datetime.datetime.strptime(frm, "%Y-%m-%d %H:%M:%S")
-        filters += " AND dTimeStamp > '{}'".format(frm.strftime("%Y-%m-%d %H:%M:%S"))
+        filters += " AND OrderDate > '{}'".format(frm.strftime("%Y-%m-%d %H:%M:%S"))
 
     cursor.execute("""
         SELECT [OrderNum]
@@ -64,7 +64,7 @@ def main():
     Get server name from the properties of the database server.
     validate database name
     '''
-    
+
     logger.info("Connecting to database")
     conn = pyodbc.connect(
         "Driver=ODBC Driver 11 for SQL Server;"
@@ -103,7 +103,8 @@ def main():
         logger.error("Failed to sync order book.")
     logger.info(resp.content)
 
-main()
+if __name__ == "__main__":
+    main()
 
 
 """

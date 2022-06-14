@@ -3,8 +3,9 @@ import os
 import sys
 import logging
 from logging import handlers
+WORKING_DIR = "C:\goprime\sync_service"
 
-log_file = os.path.join(os.getcwd(), "service.log")
+log_file = os.path.join(WORKING_DIR, "service.log")
 if len(sys.argv) > 1:
     path = os.path.dirname(sys.argv[1])
     log_file = os.path.join(path, "service.log")

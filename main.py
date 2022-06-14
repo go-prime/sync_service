@@ -6,6 +6,13 @@ import json
 import datetime
 import os 
 
+
+# For dev
+#   29a57e3c02d9b54:29a0d39cf47bbc3
+# "138.68.149.211"
+
+
+
 logger.info("running service")
 
 WORKING_DIR = "C:\goprime\sync_service"
@@ -57,6 +64,7 @@ def get_sales_orders(conn, frm=None, as_json=True):
     if as_json:
         return json.dumps(values, default=str)
     return values
+
 
 def main():
     '''

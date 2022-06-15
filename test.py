@@ -6,12 +6,13 @@ import json
 import datetime
 import os 
 
+from main import update_sales_orders
+
 WORKING_DIR = "C:\goprime\sync_service"
 config = None 
 with open (os.path.join(WORKING_DIR, "test_config.json"), "r") as f:
     config = json.load(f)
 
-print(config.get("token"))
 HEADERS = {
     "Authorization": config.get('token'),
     "Accept": "application/json",
@@ -33,7 +34,7 @@ def main():
         "Trusted_Connection=yes;"
     )
 
-    update_sales_orders(conn)
+    update_sales_orders(conn, config, HEADERS)
 
 if __name__ == "__main__":
     main()

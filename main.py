@@ -27,11 +27,11 @@ HEADERS = {
 def to_dict(row):
     return dict(zip([t[0] for t in row.cursor_description], row))
 
-def update_sales_orders(conn):
+def update_sales_orders(conn, conf, head):
     resp = requests.get(
-        f"http://{config.get('host')}/api/method/"
+        f"http://{conf.get('host')}/api/method/"
         "alpha_packaging.alpha_packaging.public_api.query_existing_orders", 
-        headers=HEADERS
+        headers=head
     )
     logger.info(resp.content)
     cursor = conn.cursor()
@@ -75,9 +75,9 @@ def update_sales_orders(conn):
         logger.info("Sending diffs to server.")
         logger.info(f"diffs: {json.dumps(diff_list)}")
         resp = requests.get(
-            f"http://{config.get('host')}/api/method/"
+            f"http://{conf.get('host')}/api/method/"
             "alpha_packaging.alpha_packaging.public_api.sync_existing_orders", 
-            headers=HEADERS,
+            headers=head,
             json={'diffs': json.dumps(diff_list)}
         )
         logger.info(resp.content)
@@ -147,6 +147,7 @@ def main():
         # only get latest items
         logger.info(f"Collecting data since {latest}")
         data = get_sales_orders(conn, latest)
+        update_sales_orders(conn, config, HEADERS)
     else:
         # initial fetch of data 
         logger.info("Collecting all orders")

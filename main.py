@@ -65,7 +65,6 @@ def get_sales_orders(conn, frm=None, as_json=True):
         return json.dumps(values, default=str)
     return values
 
-
 def main():
     '''
     use pyodbc.drivers() to get the driver list.

@@ -66,57 +66,6 @@ def get_sales_orders(conn, frm=None, as_json=True):
     return values
 
 
-def update_sales_orders(conn):
-    resp = requests.get(
-        f"http://{config.get('host')}/api/method/"
-        "alpha_packaging.alpha_packaging.public_api.query_existing_orders", 
-        headers=HEADERS
-    )
-    logger.info(resp.content)
-    cursor = conn.cursor()
-    existing_orders = resp.json().get("message", [])
-    diff_list = []
-    for order in existing_orders:
-        cursor.execute("""
-            SELECT [OrderNum] as sales_order_no
-                ,[ExtOrderNum] as purchase_order_no
-                ,[OrderDate] as sales_order_date
-                ,[Code] as item_code
-                ,[QtyOutstanding] as quantity 
-                ,[Account] as customer_number
-                ,[Name] as customer_name
-                ,[Description_1] 
-                ,[fUnitPriceIncl]
-                ,[fUnitPriceExcl]
-                ,[dTimeStamp] as timestamp
-            FROM [Alpha Packaging].[dbo].[_bvSalesOrdersFull]
-            WHERE OrderNum = '{}' AND Code = '{}'
-            AND DocumentStateDesc not in ( 'Archived', 'Quote', 'Cancelled', 'Template')
-        """.format(order.get('sales_order_no'), order.get('item_code')))
-        
-        values = [to_dict(r) for r in cursor]
-        if values:
-            logger.info(f"Diffs found for {order.get('sales_order_no')}")
-            fields = values[0]
-            diff = {'sales_order_no': order.get('sales_order_no')}
-            for k,v in order.items:
-                if fields.get(k) is not None and fields.get(k) != v:
-                    diff[k] = fields[k]
-
-            if len(diff) > 1:
-                diff_list.append(diff)
-
-    if len(diff_list) > 0:
-        logger.info("Sending diffs to server.")
-        resp = requests.get(
-            f"http://{config.get('host')}/api/method/"
-            "alpha_packaging.alpha_packaging.public_api.sync_existing_orders", 
-            headers=HEADERS,
-            json={'diffs': diff_list}
-        )
-        logger.info(resp.content)
-
-
 def main():
     '''
     use pyodbc.drivers() to get the driver list.
@@ -159,6 +108,10 @@ def main():
         logger.info("Successfully synced orderbook")
     else:
         logger.error("Failed to sync order book.")
+
+    # if latest:
+        # insert update sales order book here.
+        # pass
     logger.info(resp.content)
 
 

@@ -4,3 +4,4 @@ dist/
 *.log
 *.pyc
 config.json
+test_config.json

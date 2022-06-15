@@ -26,6 +26,9 @@ HEADERS = {
     "Content-Type": "application/json"
 }
 
+def to_dict(row):
+    return dict(zip([t[0] for t in row.cursor_description], row))
+
 def get_sales_orders(conn, frm=None, as_json=True):
     '''Get all the sales orders from the database'''
     cursor = conn.cursor()
@@ -55,9 +58,6 @@ def get_sales_orders(conn, frm=None, as_json=True):
         FROM [Alpha Packaging].[dbo].[_bvSalesOrdersFull]
         {}
     """.format(filters))
-
-    def to_dict(row):
-        return dict(zip([t[0] for t in row.cursor_description], row))
 
     values = [to_dict(r) for r in cursor]
 
@@ -107,7 +107,12 @@ def main():
         logger.info("Successfully synced orderbook")
     else:
         logger.error("Failed to sync order book.")
+
+    # if latest:
+        # insert update sales order book here.
+        # pass
     logger.info(resp.content)
+
 
 if __name__ == "__main__":
     main()
